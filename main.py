@@ -107,7 +107,7 @@ def juego():
     intro_render = base_font.render('', True, NEGRO)
     jugadores_render = base_font.render('Jugadores', True, NEGRO)
     pantalla = pygame.display.set_mode([ANCHO, ALTO])
-    pygame.display.set_caption("Parchis3")
+    pygame.display.set_caption("Parchis")
 
     #--------------
     fin = False
@@ -299,7 +299,7 @@ def juego():
             break
         #----------------------- Inicio de la partida -------------------------#
         pantalla = pygame.display.set_mode([ANCHO, ALTO])
-        pygame.display.set_caption("Parchis3 - UTP")
+        pygame.display.set_caption("Parchis")
 
         font_jugadores = pygame.font.SysFont('arial', 20)
         nombres_render = []
@@ -420,7 +420,7 @@ def juego():
             cliente.inicia = False
             
         pantalla = pygame.display.set_mode([ANCHO, ALTO])
-        pygame.display.set_caption("Parchis3")
+        pygame.display.set_caption("Parchis")
         #captura = pygame.image.load('screenshot.jpg')
         continua = False
 

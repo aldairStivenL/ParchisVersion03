@@ -35,6 +35,7 @@ class Cliente(Thread):
         self.carcel = []
     
     def enviar(self, mensaje):
+        #print(f"--> {mensaje}")
         mensaje = json.dumps(mensaje)
         self.socket.send(mensaje.encode())
     
