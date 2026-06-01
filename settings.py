@@ -175,3 +175,54 @@ salidas = {
 }
 
 tam_ficha = (10, 15)
+
+MOVIMIENTO_INVALIDO = [-15, -15]
+
+def calcular_destino_movimiento(ficha, pasos, color):
+    """Calcula la casilla destino para una ficha o None si el movimiento no es valido."""
+    if pasos <= 0:
+        return None
+
+    if ficha in carcel_fichas[color] or ficha in final_fichas[color]:
+        return None
+
+    casa = casas[color]
+    if ficha in casa:
+        indice_casa = casa.index(ficha) + pasos
+        if indice_casa >= len(casa):
+            return None
+        return casa[indice_casa]
+
+    ls_casillas = list(casillas.values())
+    if ficha not in ls_casillas:
+        return None
+
+    indice_actual = ls_casillas.index(ficha) + 1
+    indice_entrada = ls_casillas.index(casa[0]) + 1
+
+    pasos_a_entrada = indice_entrada - indice_actual
+    if pasos_a_entrada < 0:
+        pasos_a_entrada += len(casillas)
+
+    if pasos >= pasos_a_entrada:
+        indice_casa = pasos - pasos_a_entrada
+        if indice_casa >= len(casa):
+            return None
+        return casa[indice_casa]
+
+    indice_destino = indice_actual + pasos
+    if indice_destino > len(casillas):
+        indice_destino -= len(casillas)
+    return casillas[indice_destino]
+
+
+def calcular_posibles_movimientos(fichas, movimientos, color):
+    """Devuelve una matriz de destinos por ficha respetando el orden de movimientos."""
+    posibles = []
+    for ficha in fichas:
+        destinos = []
+        for movimiento in movimientos:
+            destino = calcular_destino_movimiento(ficha, movimiento, color)
+            destinos.append(destino if destino is not None else MOVIMIENTO_INVALIDO)
+        posibles.append(destinos)
+    return posibles

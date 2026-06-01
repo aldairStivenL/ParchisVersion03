@@ -322,92 +322,17 @@ class Cliente(Thread):
                                 siguiente = False
                                 self.oportunides = 0
                                 #-----------------------------------------#
-                                ls_casillas = list(casillas.values())
-                                posibles_movimientos = []
                                 self.cantidad_movimientos = sum(self.dados) + 2
-                                casa = casas[jugador['color']]
-                                final = final_fichas[jugador['color']]
-                                index_casa = ls_casillas.index(casa[0]) + 1
-                                index = 0
-                                for ficha in jugador['fichas']:
-                                    if not ficha in self.carcel and not ficha in final:
-
-                                        if ficha in ls_casillas and ficha != casa[0]:
-                                            index = ls_casillas.index(ficha) + 1
-                                        else:
-                                            index = casa.index(ficha) + 1
-                                        
-                                        
-                                        pos1 = index + self.dados[0] + 1
-                                        pos2 = index + self.dados[1] + 1
-                                        pos3 = index + sum(self.dados) + 2
-                                        if ficha in ls_casillas and ficha != casa[0]:
-                                            if pos1 >= index_casa and index <= index_casa:
-                                                
-                                                pos1 = pos1 - index_casa
-                                                
-                                                if pos1 >= len(casa):
-                                                    pos1 = [-15, -15]
-                                                else:
-                                                    
-                                                    pos1 = casa[pos1]
-                                            else:
-                                                if pos1 > 68:
-                                                    pos1 = pos1 - 68
-                                                pos1 = casillas[pos1]
-                                
-                                            
-                                            if pos2 >= index_casa and index <= index_casa:
-                                                pos2 = pos2 - index_casa
-                                                if pos2 >= len(casa):
-                                                    pos2 = [-15, -15]
-                                                else:
-                                                    
-                                                    pos2 = casa[pos2]
-                                            else:
-                                                if pos2 > 68:
-                                                    pos2 = pos2 - 68
-                                                pos2 = casillas[pos2]
-                                    
-                                            
-                                            if pos3 >= index_casa and index <= index_casa:
-                                                pos3 = pos3 - index_casa
-                                                if pos3 >= len(casa):
-                                                    pos3 = [-15, -15]
-                                                else:
-                                                    
-                                                    pos3 = casa[pos3]
-                                            else:
-                                                if pos3 > 68:
-                                                    pos3 = pos3 - 68
-                                                pos3 = casillas[pos3]
-                                        else:
-                                            pos1 -= 1
-                                            pos2 -= 1
-                                            pos3 -= 1
-                                            if pos1 >= len(casa):
-                                                pos1 = [- 15, -15]
-                                            else:
-                                                pos1 = casa[pos1]
-                                            
-                                            if pos2 >= len(casa):
-                                                pos2 = [- 15, -15]
-                                            else:
-                                                pos2 = casa[pos2]
-                                            
-                                            if pos3 >= len(casa):
-                                                pos3 = [- 15, -15]
-                                            else:
-                                                pos3 = casa[pos3]
-                
-                                        posibles_movimientos.append([pos1, pos2, pos3])
-                                    else:
-                                        posibles_movimientos.append([])
-                                    movimientos = [self.dados[0]+1, self.dados[1]+1, sum(self.dados)+2]
+                                movimientos = [self.dados[0]+1, self.dados[1]+1, sum(self.dados)+2]
+                                posibles_movimientos = calcular_posibles_movimientos(
+                                    jugador['fichas'],
+                                    movimientos,
+                                    jugador['color']
+                                )
                                 sin_movimientos = False
                                 for moves in posibles_movimientos:
                                     for mov in moves:
-                                        if mov != [-15, -15]:
+                                        if mov != MOVIMIENTO_INVALIDO:
                                             sin_movimientos=True
                                             break
                                 if sin_movimientos:      
