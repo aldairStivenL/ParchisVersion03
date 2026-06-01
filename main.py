@@ -45,28 +45,68 @@ escucha.start()
 cliente.colores_disponibles = colores_parques.copy()
 
 
+DESPLAZAMIENTOS_APILADAS = [
+    (-7, -7),
+    (7, -7),
+    (-7, 7),
+    (7, 7),
+    (0, -10),
+    (0, 10),
+    (-10, 0),
+    (10, 0),
+]
 
-def imprimirFicha(imagen, ficha, pantalla):
+def obtener_posicion_dibujo_ficha(ficha, index_jugador, index_ficha, jugadores):
+    fichas_misma_posicion = []
+    for jugador_i, jugador in enumerate(jugadores):
+        for ficha_i, otra_ficha in enumerate(jugador['fichas']):
+            if otra_ficha == ficha:
+                fichas_misma_posicion.append((jugador_i, ficha_i))
+
+    if len(fichas_misma_posicion) <= 1:
+        return ficha
+
+    try:
+        orden = fichas_misma_posicion.index((index_jugador, index_ficha))
+    except ValueError:
+        return ficha
+
+    dx, dy = DESPLAZAMIENTOS_APILADAS[orden % len(DESPLAZAMIENTOS_APILADAS)]
+    return [ficha[0] + dx, ficha[1] + dy]
+
+
+def imprimirFicha(imagen, ficha, pantalla, pos_dibujo=None):
     x, y = imagen.get_size()
-    pos_x = ficha[0]-x//2
-    pos_y = ficha[1]-y//2
+    centro = pos_dibujo if pos_dibujo is not None else ficha
+    pos_x = centro[0]-x//2
+    pos_y = centro[1]-y//2
     pantalla.blit(imagen,(pos_x, pos_y))
 
 def ficha_seleccionada(pos_raton, cliente: Cliente):
-    index = 0
-    seleccionada = False
-    ficha_selec = None
-    for ficha in cliente.jugadores[cliente.index_jugador]['fichas']:
-        left = ficha[0] - tam_ficha[0]
+    seleccionadas = []
+    jugador_actual = cliente.jugadores[cliente.index_jugador]
+    for index, ficha in enumerate(jugador_actual['fichas']):
+        pos_dibujo = obtener_posicion_dibujo_ficha(
+            ficha,
+            cliente.index_jugador,
+            index,
+            cliente.jugadores
+        )
+        left = pos_dibujo[0] - tam_ficha[0]
         right = left + 2*tam_ficha[0]
-        up = ficha[1] - tam_ficha[1]
+        up = pos_dibujo[1] - tam_ficha[1]
         bottom = up + 2*tam_ficha[1]
         if pos_raton[0] >= left and pos_raton[0] <= right and pos_raton[1] >= up and pos_raton[1] <= bottom:
-            seleccionada = True
-            ficha_selec = ficha
-            break
-        index +=1
-    if seleccionada:
+            seleccionadas.append((index, ficha))
+
+    if seleccionadas:
+        index, ficha_selec = seleccionadas[0]
+        if not cliente.saca_ficha:
+            for index_candidato, ficha_candidata in seleccionadas:
+                if index_candidato not in cliente.fichas_movidas_turno:
+                    index, ficha_selec = index_candidato, ficha_candidata
+                    break
+
         if cliente.saca_ficha:
             fin = final_fichas[cliente.color]
             casa = casas[cliente.color]
@@ -77,7 +117,7 @@ def ficha_seleccionada(pos_raton, cliente: Cliente):
         elif ficha_selec in carcel_fichas[cliente.color] and cliente.dados[0] == cliente.dados[1]:
             cliente.jugadores[cliente.index_jugador]['fichas'][index] = casillas[salidas[cliente.color]]
             cliente.cantidad_movimientos -= cliente.dados[0] + 1
-            cliente.limpiar_posiciones(cliente.dados[0] + 1)
+            cliente.limpiar_posiciones(cliente.dados[0] + 1, index)
             cliente.mover(cliente.dados[0] + 1)
 
         else:
@@ -344,21 +384,29 @@ def juego():
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     pos_raton = pygame.mouse.get_pos()
 
-                    if cliente.list_aux or cliente.saca_ficha:
-                        ficha_seleccionada(pos_raton, cliente)
-
+                    movio_ficha = False
                     if cliente.posibilidades:
                         cliente.posibilidades.update(pos_raton)
+                        movio_ficha = cliente.mueve_ficha
                         cliente.mueve_ficha = False
-                
+
+                    if not movio_ficha and (cliente.list_aux or cliente.saca_ficha):
+                        ficha_seleccionada(pos_raton, cliente)
+
             pantalla.fill(color_fondo)
             pantalla.blit(fondo, (0,0))
 
             # Se imprimen las cuatro fichas de cada jugador en partida
-            for jugador in cliente.jugadores:
-                for ficha in jugador['fichas']:
+            for index_jugador, jugador in enumerate(cliente.jugadores):
+                for index_ficha, ficha in enumerate(jugador['fichas']):
                     imagen = fichas_imagenes[jugador['color']]
-                    imprimirFicha(imagen, ficha, pantalla)
+                    pos_dibujo = obtener_posicion_dibujo_ficha(
+                        ficha,
+                        index_jugador,
+                        index_ficha,
+                        cliente.jugadores
+                    )
+                    imprimirFicha(imagen, ficha, pantalla, pos_dibujo)
                     
                     
             # Se imprimen los nombres de los jugadores en partida
@@ -461,6 +509,7 @@ def juego():
         cliente.primero = False
         cliente.colores_disponibles = colores_parques.copy()
         cliente.movimientos=[]
+        cliente.fichas_movidas_turno = []
 
         while not continua:
             #pantalla.blit(captura,(0, 0))

@@ -36,6 +36,7 @@ class Cliente:
         self.primero = False
         self.colores_disponibles = None
         self.movimientos=[]
+        self.fichas_movidas_turno = []
         # Sincronización Berkeley
         self.berkeley = BerkeleyCliente()
         # Última recomendación de IA
@@ -49,8 +50,10 @@ class Cliente:
         mensaje = json.dumps(mensaje)
         self.socket.send(mensaje.encode())
     
-    def limpiar_posiciones(self, diff):
+    def limpiar_posiciones(self, diff, indice_ficha=None):
         self.posibilidades.empty()
+        if indice_ficha is not None and indice_ficha not in self.fichas_movidas_turno:
+            self.fichas_movidas_turno.append(indice_ficha)
         if diff in self.movimientos:
             self.movimientos.remove(diff)
 
@@ -70,8 +73,11 @@ class Cliente:
             jugador['color']
         )
         self.list_aux = []
-        for ficha, posis in zip(jugador['fichas'], posiciones):
+        for indice_ficha, (ficha, posis) in enumerate(zip(jugador['fichas'], posiciones)):
             temp = []
+            if indice_ficha in self.fichas_movidas_turno:
+                self.list_aux.append(temp)
+                continue
             for indice, pos in enumerate(posis):
                 if pos == MOVIMIENTO_INVALIDO:
                     continue
@@ -180,6 +186,7 @@ class Cliente:
                         self.list_aux = []
                         self.posibilidades.empty()
                         self.movimientos = []
+                        self.fichas_movidas_turno = []
                         self.cantidad_movimientos = 0
                         if tipo == 'juegue':
                             self.primero = True
@@ -200,6 +207,7 @@ class Cliente:
                         posiciones = contenido[2]
                         self.list_aux = []
                         self.posibilidades.empty()
+                        self.fichas_movidas_turno = []
                         for ficha, posis in zip(fichas, posiciones):
                             temp = []
                             for indice, pos in enumerate(posis):
@@ -334,7 +342,7 @@ class Ubicacion(pygame.sprite.Sprite):
                 elif fichas_casa == 2:
                     pass
                 
-                self.cliente.limpiar_posiciones(self.diff)
+                self.cliente.limpiar_posiciones(self.diff, index)
                 
                 self.cliente.mover(self.diff)
                 self.cliente.mueve_ficha = True
