@@ -51,28 +51,34 @@ class Cliente:
     
     def limpiar_posiciones(self, diff):
         self.posibilidades.empty()
-        if self.cantidad_movimientos == 0:
+        if diff in self.movimientos:
+            self.movimientos.remove(diff)
+
+        if self.cantidad_movimientos <= 0:
             self.list_aux = []
             self.movimientos = []
-        else:
-            for ubicaciones in self.list_aux:
-                if self in ubicaciones:
-                    ubicaciones.clear()
-                    break
-            
-            dados = self.dados
-            for ubicaciones in self.list_aux:
-                for ubicacion in ubicaciones:
-                    if diff == ubicacion.diff:
-                        ubicaciones.remove(ubicacion)
-                        if ubicaciones:
-                            ubicaciones.pop(-1)
-                        if dados[0] == dados[1]:
-                            break
-            
-            self.movimientos.remove(diff)
-            if self.movimientos:
-                self.movimientos.pop(-1)
+            return
+
+        movimiento_suma = sum(self.dados) + 2
+        if movimiento_suma in self.movimientos:
+            self.movimientos.remove(movimiento_suma)
+
+        jugador = self.jugadores[self.index_jugador]
+        posiciones = calcular_posibles_movimientos(
+            jugador['fichas'],
+            self.movimientos,
+            jugador['color']
+        )
+        self.list_aux = []
+        for ficha, posis in zip(jugador['fichas'], posiciones):
+            temp = []
+            for indice, pos in enumerate(posis):
+                if pos == MOVIMIENTO_INVALIDO:
+                    continue
+                u = Ubicacion(pos, (0, 0, 0), (15, 15), ficha, self)
+                u.diff = self.movimientos[indice]
+                temp.append(u)
+            self.list_aux.append(temp)
 
     def recibir(self):
         while True:
@@ -171,6 +177,10 @@ class Cliente:
                 
                 else:
                     if tipo == 'turno' or tipo == 'juegue':
+                        self.list_aux = []
+                        self.posibilidades.empty()
+                        self.movimientos = []
+                        self.cantidad_movimientos = 0
                         if tipo == 'juegue':
                             self.primero = True
                         if contenido == self.nombre:
@@ -188,14 +198,14 @@ class Cliente:
                         self.cantidad_movimientos = contenido[0]
                         self.movimientos = contenido[1]
                         posiciones = contenido[2]
-                        cont = 0
+                        self.list_aux = []
+                        self.posibilidades.empty()
                         for ficha, posis in zip(fichas, posiciones):
                             temp = []
-                            for pos in posis:
-                                if not ficha in carcel_fichas[self.color]:
+                            for indice, pos in enumerate(posis):
+                                if pos != MOVIMIENTO_INVALIDO and not ficha in carcel_fichas[self.color]:
                                     u = Ubicacion(pos, (0, 0, 0),(15, 15), ficha, self)
-                                    u.diff = self.movimientos[cont]
-                                    cont = (cont+1) % 3
+                                    u.diff = self.movimientos[indice]
                                     temp.append(u)
                             self.list_aux.append(temp.copy())
 
