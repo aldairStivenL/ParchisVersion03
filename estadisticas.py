@@ -136,6 +136,16 @@ def historial_jugador(nombre: str, n: int = 5) -> List[Dict[str, Any]]:
     return partidas_del_jugador[:n]
 
 
+def ultimas_partidas(n: int = 5) -> List[Dict[str, Any]]:
+    """
+    Devuelve las ultimas n partidas registradas, mas recientes primero.
+    """
+    datos = _cargar()
+    partidas = list(datos['partidas'])
+    partidas.sort(key=lambda p: p['fecha'], reverse=True)
+    return partidas[:n]
+
+
 def resumen_jugador(nombre: str) -> Dict[str, Any]:
     """
     Devuelve un resumen completo de las estadísticas de un jugador.

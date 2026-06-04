@@ -226,3 +226,99 @@ def calcular_posibles_movimientos(fichas, movimientos, color):
             destinos.append(destino if destino is not None else MOVIMIENTO_INVALIDO)
         posibles.append(destinos)
     return posibles
+
+
+def valores_dados(dados):
+    """Convierte los dados internos 0-5 a valores 1-6."""
+    return [dado + 1 for dado in dados if dado is not None and dado >= 0]
+
+
+def ficha_activa(ficha, color):
+    return ficha not in carcel_fichas[color] and ficha not in final_fichas[color]
+
+
+def indices_fichas_activas(fichas, color):
+    return [i for i, ficha in enumerate(fichas) if ficha_activa(ficha, color)]
+
+
+def distancia_a_meta(ficha, color):
+    """Cantidad exacta de pasos para llegar a la ultima casilla de llegada."""
+    if not ficha_activa(ficha, color):
+        return None
+
+    casa = casas[color]
+    if ficha in casa:
+        return len(casa) - 1 - casa.index(ficha)
+
+    ls_casillas = list(casillas.values())
+    if ficha not in ls_casillas:
+        return None
+
+    indice_actual = ls_casillas.index(ficha) + 1
+    indice_entrada = ls_casillas.index(casa[0]) + 1
+    pasos_a_entrada = indice_entrada - indice_actual
+    if pasos_a_entrada < 0:
+        pasos_a_entrada += len(casillas)
+    return pasos_a_entrada + len(casa) - 1
+
+
+def debe_lanzar_un_dado(fichas, color):
+    """Solo una ficha activa cerca de la meta lanza un dado."""
+    activas = indices_fichas_activas(fichas, color)
+    if len(activas) != 1:
+        return False
+    distancia = distancia_a_meta(fichas[activas[0]], color)
+    return distancia is not None and distancia <= 6
+
+
+def movimientos_desde_dados(dados, fichas, color):
+    valores = valores_dados(dados)
+    if not valores:
+        return []
+    if len(valores) == 1:
+        return [valores[0]]
+
+    activas = indices_fichas_activas(fichas, color)
+    if len(activas) == 1:
+        return [sum(valores)]
+
+    return [valores[0], valores[1], sum(valores)]
+
+
+def calcular_posibles_movimientos_turno(fichas, dados, color):
+    """Calcula opciones iniciales evitando jugadas parciales que bloqueen el turno."""
+    movimientos = movimientos_desde_dados(dados, fichas, color)
+    valores = valores_dados(dados)
+    posibles = calcular_posibles_movimientos(fichas, movimientos, color)
+
+    if len(valores) != 2 or len(movimientos) != 3:
+        return movimientos, posibles
+
+    dado_1, dado_2 = valores
+    for indice_ficha, ficha in enumerate(fichas):
+        if not ficha_activa(ficha, color):
+            continue
+
+        if posibles[indice_ficha][0] != MOVIMIENTO_INVALIDO:
+            llega_a_meta = posibles[indice_ficha][0] == casas[color][-1]
+            puede_otro_usar_dado_2 = any(
+                otro_indice != indice_ficha
+                and ficha_activa(otra_ficha, color)
+                and calcular_destino_movimiento(otra_ficha, dado_2, color) is not None
+                for otro_indice, otra_ficha in enumerate(fichas)
+            )
+            if not llega_a_meta and not puede_otro_usar_dado_2:
+                posibles[indice_ficha][0] = MOVIMIENTO_INVALIDO
+
+        if posibles[indice_ficha][1] != MOVIMIENTO_INVALIDO:
+            llega_a_meta = posibles[indice_ficha][1] == casas[color][-1]
+            puede_otro_usar_dado_1 = any(
+                otro_indice != indice_ficha
+                and ficha_activa(otra_ficha, color)
+                and calcular_destino_movimiento(otra_ficha, dado_1, color) is not None
+                for otro_indice, otra_ficha in enumerate(fichas)
+            )
+            if not llega_a_meta and not puede_otro_usar_dado_1:
+                posibles[indice_ficha][1] = MOVIMIENTO_INVALIDO
+
+    return movimientos, posibles

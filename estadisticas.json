@@ -1,0 +1,25 @@
+{
+  "partidas": [
+    {
+      "id": 1,
+      "fecha": "2026-06-04T13:54:43",
+      "ganador": "Alejandro",
+      "jugadores": [
+        "Alejandro",
+        "Alda"
+      ]
+    }
+  ],
+  "jugadores": {
+    "Alejandro": {
+      "victorias": 1,
+      "partidas_jugadas": 1,
+      "ultima_partida": "2026-06-04T13:54:43"
+    },
+    "Alda": {
+      "victorias": 0,
+      "partidas_jugadas": 1,
+      "ultima_partida": "2026-06-04T13:54:43"
+    }
+  }
+}

@@ -60,10 +60,10 @@ class Cliente:
         if self.cantidad_movimientos <= 0:
             self.list_aux = []
             self.movimientos = []
-            return
+            return 0
 
-        movimiento_suma = sum(self.dados) + 2
-        if movimiento_suma in self.movimientos:
+        movimiento_suma = sum(valores_dados(self.dados))
+        if len(valores_dados(self.dados)) > 1 and movimiento_suma in self.movimientos:
             self.movimientos.remove(movimiento_suma)
 
         jugador = self.jugadores[self.index_jugador]
@@ -85,6 +85,13 @@ class Cliente:
                 u.diff = self.movimientos[indice]
                 temp.append(u)
             self.list_aux.append(temp)
+        if not any(self.list_aux):
+            restante = self.cantidad_movimientos
+            self.cantidad_movimientos = 0
+            self.movimientos = []
+            self.list_aux = []
+            return restante
+        return 0
 
     def recibir(self):
         while True:
@@ -266,6 +273,10 @@ class Cliente:
         #dado_1 = 3
         #dado_2 = 3
         self.dados = [dado_1, dado_2]
+        if self.primero and self.turno in ('Tú', 'TÃº', 'TÃƒÂº'):
+            jugador = self.jugadores[self.index_jugador]
+            if debe_lanzar_un_dado(jugador['fichas'], jugador['color']):
+                self.dados = [dado_1]
 
         dict = {
             'tipo':'',
@@ -342,8 +353,8 @@ class Ubicacion(pygame.sprite.Sprite):
                 elif fichas_casa == 2:
                     pass
                 
-                self.cliente.limpiar_posiciones(self.diff, index)
+                extra_consumido = self.cliente.limpiar_posiciones(self.diff, index)
                 
-                self.cliente.mover(self.diff)
+                self.cliente.mover(self.diff + extra_consumido)
                 self.cliente.mueve_ficha = True
                 
