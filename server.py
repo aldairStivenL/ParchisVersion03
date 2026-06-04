@@ -36,8 +36,8 @@ class Cliente(Thread):
     
     def enviar(self, mensaje):
         #print(f"--> {mensaje}")
-        mensaje = json.dumps(mensaje)
-        self.socket.send(mensaje.encode())
+        mensaje = json.dumps(mensaje) + '\n'
+        self.socket.sendall(mensaje.encode())
     
     def broadcast(self, msj, comodin = False):
         for cliente in clientes:
@@ -70,10 +70,13 @@ class Cliente(Thread):
         global inicia
         global clientes
         global canti_tiros 
+        flujo = self.socket.makefile('r', encoding='utf-8')
         
         while True:
             try:
-                mensaje = self.socket.recv(1024).decode()
+                mensaje = flujo.readline()
+                if not mensaje:
+                    raise error
             except error:
                 print(f'{self.name}:desconectado')
                 if self.registrado and self in clientes:
@@ -230,11 +233,10 @@ class Cliente(Thread):
                                     'tipo':'iniciar juego',
                                     'contenido':turno
                                 }
-                                msj = json.dumps(dic).encode()
                                 for cliente in clientes:
                                     if cliente.registrado:
                                         cliente.inicia = True
-                                        cliente.socket.send(msj)
+                                        cliente.enviar(dic)
                                     else:
                                         dic = {
                                             'tipo':'info',
@@ -453,7 +455,7 @@ class Cliente(Thread):
 def iniciar_servidor():
     s = socket()
     # s.bind(("10.253.46.126", 8000))
-    s.bind(("0.0.0.0", 8000))
+    s.bind(("10.253.52.91", 8000))
     s.listen(4)
     print('Servidor escuchando...')
     while True:

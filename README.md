@@ -10,11 +10,7 @@ Proyecto de parchis multijugador para Sistemas Distribuidos.
 
 ## Instalacion
 
-1. Abre una terminal en esta carpeta:
-
-   ```powershell
-   cd C:\Users\eidal\Videos\parques_sd\ParchisVersion03
-   ```
+1. Abre una terminal en la carpeta donde se ubica el proyecto
 
 2. Instala Pygame si aun no lo tienes:
 
@@ -39,7 +35,6 @@ Proyecto de parchis multijugador para Sistemas Distribuidos.
    ```
 
 3. En cada ventana del juego:
-
    - Presiona `ESPACIO` para pasar la portada.
    - Presiona cualquier tecla para pasar la pantalla de instrucciones.
    - Escribe un nombre.

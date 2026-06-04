@@ -20,7 +20,7 @@ servidor_lanzado = False
 while True:
     try:
         # Conectamos a tu propia PC
-        s.connect(("127.0.0.1", 8000))
+        s.connect(("10.253.42.157", 8000))
         print("¡Conectado exitosamente!")
         break 
     except error:

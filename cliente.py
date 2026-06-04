@@ -47,8 +47,8 @@ class Cliente:
     #Formato para los mensajes:
     #msj = [name_player,self.fichas]
     def enviar(self, mensaje):
-        mensaje = json.dumps(mensaje)
-        self.socket.send(mensaje.encode())
+        mensaje = json.dumps(mensaje) + '\n'
+        self.socket.sendall(mensaje.encode())
     
     def limpiar_posiciones(self, diff, indice_ficha=None):
         self.posibilidades.empty()
@@ -94,9 +94,12 @@ class Cliente:
         return 0
 
     def recibir(self):
+        flujo = self.socket.makefile('r', encoding='utf-8')
         while True:
             try:
-                recibe = self.socket.recv(1024).decode()
+                recibe = flujo.readline()
+                if not recibe:
+                    break
             except Exception as e:
                 print(f'Error: {e}')
                 break
