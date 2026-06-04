@@ -21,7 +21,7 @@ import urllib.request
 import urllib.error
 from settings import (
     casillas, casas, carcel_fichas, final_fichas,
-    seguros, salidas
+    seguros, salidas, movimientos_desde_dados
 )
 
 # ---------------------------------------------------------------
@@ -148,10 +148,10 @@ def _recomendar_local(dados: list, jugador: dict, todos_jugadores: list) -> dict
     """Motor local de recomendación sin IA."""
     color = jugador['color']
     fichas = jugador['fichas']
-    movimientos_posibles = [dados[0] + 1, dados[1] + 1, sum(dados) + 2]
+    movimientos_posibles = movimientos_desde_dados(dados, fichas, color)
     mejor_score = -999
     mejor_ficha_idx = 0
-    mejor_dado = movimientos_posibles[0]
+    mejor_dado = movimientos_posibles[0] if movimientos_posibles else 0
     mejor_razones = ['movimiento por defecto']
 
     for i, ficha in enumerate(fichas):
@@ -209,13 +209,15 @@ def _construir_prompt(dados: list, jugador: dict, todos_jugadores: list) -> str:
                         cerca.append(f'casilla {idx}')
             rivales_desc.append(f'  {j["nombre"]} ({j["color"]}): {", ".join(cerca) if cerca else "todas en cárcel"}')
 
-    mov = [dados[0]+1, dados[1]+1, sum(dados)+2]
+    mov = movimientos_desde_dados(dados, fichas, color)
+    dados_txt = ' y '.join(str(dado + 1) for dado in dados)
+    movimientos_txt = ', '.join(str(m) for m in mov)
 
     prompt = f"""Eres un experto en el juego de Parqués colombiano. Analiza el siguiente estado y recomienda la mejor jugada.
 
 JUGADOR: {jugador['nombre']} (fichas {color})
-DADOS: {dados[0]+1} y {dados[1]+1}
-MOVIMIENTOS POSIBLES: {mov[0]}, {mov[1]} o {mov[2]} casillas
+DADOS: {dados_txt}
+MOVIMIENTOS POSIBLES: {movimientos_txt} casillas
 
 MIS FICHAS:
 {chr(10).join(fichas_desc)}

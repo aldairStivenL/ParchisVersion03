@@ -6,7 +6,7 @@ from socket import socket, error
 from threading import Thread
 from cliente import Cliente,Cuadro
 from settings import *
-from estadisticas import ranking, probabilidad_ganar, historial_jugador
+from estadisticas import ranking, probabilidad_ganar, historial_jugador, ultimas_partidas
 from recomendacion import obtener_recomendacion
 
 
@@ -114,11 +114,11 @@ def ficha_seleccionada(pos_raton, cliente: Cliente):
                 cliente.jugadores[cliente.index_jugador]['fichas'][index] = casa [-1]
                 cliente.saca_ficha = False
                 cliente.mover(0)
-        elif ficha_selec in carcel_fichas[cliente.color] and cliente.dados[0] == cliente.dados[1]:
+        elif ficha_selec in carcel_fichas[cliente.color] and len(cliente.dados) == 2 and cliente.dados[0] == cliente.dados[1]:
             cliente.jugadores[cliente.index_jugador]['fichas'][index] = casillas[salidas[cliente.color]]
             cliente.cantidad_movimientos -= cliente.dados[0] + 1
-            cliente.limpiar_posiciones(cliente.dados[0] + 1, index)
-            cliente.mover(cliente.dados[0] + 1)
+            extra_consumido = cliente.limpiar_posiciones(cliente.dados[0] + 1, index)
+            cliente.mover(cliente.dados[0] + 1 + extra_consumido)
 
         else:
             print('Ficha seleccionada')
@@ -131,19 +131,104 @@ def centrar(pantalla, txt_render, pos):
     x, y = pos[0] - w//2, pos[1]-h//2
     pantalla.blit(txt_render,(x,y))
 
+def dibujar_estadisticas_menu(pantalla, fuente_titulo, fuente_texto, nombre_actual):
+    x, y = 515, 155
+    ancho, alto = 220, 270
+    pygame.draw.rect(pantalla, (245, 245, 245), (x - 10, y - 12, ancho, alto))
+    pygame.draw.rect(pantalla, NEGRO, (x - 10, y - 12, ancho, alto), 1)
+
+    titulo = fuente_titulo.render('Estadisticas', True, NEGRO)
+    pantalla.blit(titulo, (x, y))
+
+    try:
+        tabla = ranking(4)
+    except Exception:
+        tabla = []
+
+    subtitulo = fuente_texto.render('Mas victorias:', True, NEGRO)
+    pantalla.blit(subtitulo, (x, y + 30))
+
+    if tabla:
+        for i, jugador_stats in enumerate(tabla, 1):
+            nombre = jugador_stats['nombre'][:10]
+            victorias = jugador_stats['victorias']
+            partidas = jugador_stats['partidas_jugadas']
+            win_rate = jugador_stats['win_rate']
+            linea = f'{i}. {nombre}  V:{victorias}  P:{partidas}'
+            render = fuente_texto.render(linea, True, NEGRO)
+            pantalla.blit(render, (x, y + 30 + i * 20))
+    else:
+        render = fuente_texto.render('Sin partidas guardadas', True, NEGRO)
+        pantalla.blit(render, (x, y + 55))
+
+    try:
+        recientes = ultimas_partidas(3)
+    except Exception:
+        recientes = []
+
+    subtitulo_recientes = fuente_texto.render('Ultimas partidas:', True, NEGRO)
+    pantalla.blit(subtitulo_recientes, (x, y + 125))
+
+    if recientes:
+        for i, partida in enumerate(recientes):
+            ganador = partida.get('ganador', '')[:12]
+            linea = f'#{partida.get("id", "?")} gano {ganador}'
+            render = fuente_texto.render(linea, True, NEGRO)
+            pantalla.blit(render, (x, y + 145 + i * 17))
+    else:
+        render = fuente_texto.render('No hay historial', True, NEGRO)
+        pantalla.blit(render, (x, y + 145))
+
+    nombre_actual = nombre_actual.strip()
+    if nombre_actual:
+        try:
+            probabilidad = probabilidad_ganar(nombre_actual)
+        except Exception:
+            probabilidad = 0.0
+        texto_prob = f'Prob. {nombre_actual[:10]}: {probabilidad:.1f}%'
+    else:
+        texto_prob = 'Prob.: escribe nombre'
+
+    render_prob = fuente_texto.render(texto_prob, True, NEGRO)
+    pantalla.blit(render_prob, (x, y + 210))
+
+
+def dibujar_instrucciones_lobby(pantalla, fuente_texto):
+    x, y = 45, 335
+    instrucciones = [
+        '1. Ingrese su nombre.',
+        '2. Click en un color.',
+        '3. TAB: entrar a la lista.',
+        '4. ENTER: marcar listo.',
+        'Al iniciar, todos tiran dados para decidir quien empieza.'
+    ]
+    for i, texto in enumerate(instrucciones):
+        render = fuente_texto.render(texto, True, NEGRO)
+        pantalla.blit(render, (x, y + i * 20))
+
 
 def juego():
     #------------------- Pantalla de inicio (sala de espera)----------#
     global cliente
     cliente.conexion() 
     ventana_cerrada = False
-    inicial_cuadros = (POS_COLORES[0]+80, POS_COLORES[1])
+    pos_nombre_label = (45, 185)
+    pos_nombre_input = (45, 215)
+    pos_color_label = (45, 260)
+    inicial_cuadros = (45, 290)
+    pos_jugadores_titulo = (300, 170)
+    pos_lista_jugadores = (300, 205)
+    pos_listos = (300, 365)
     base_font = pygame.font.SysFont('arial',20,True)
     base_render = pygame.font.SysFont('arial', 25, True,True)
+    stats_titulo_font = pygame.font.SysFont('arial', 18, True)
+    stats_texto_font = pygame.font.SysFont('arial', 14)
+    ayuda_font = pygame.font.SysFont('arial', 15)
     info_render = base_font.render(cliente.info,True, NEGRO)
     parchis_render = base_font.render('', True, NEGRO)
     nombre_render = base_font.render('Nombre:', True, NEGRO)
     color_render = base_font.render('Color:', True, NEGRO)
+    placeholder_nombre_render = ayuda_font.render('Ingrese su nombre', True, (100, 100, 100))
     intro_render = base_font.render('', True, NEGRO)
     jugadores_render = base_font.render('Jugadores', True, NEGRO)
     pantalla = pygame.display.set_mode([ANCHO, ALTO])
@@ -198,8 +283,6 @@ def juego():
             n += 1
             cuadro = Cuadro(pos,color,(TAMAÑO_CUADRO, TAMAÑO_CUADRO), color_name, cliente)
             colores.add(cuadro)
-        w, h = jugadores_render.get_size()
-        POS_LISTOS = (POS_LISTA[0] + w +10, POS_LISTA[1])
         listos_render = base_font.render(cliente.listos, True, NEGRO)
         listos = cliente.listos
         while not cliente.inicia:
@@ -269,7 +352,7 @@ def juego():
             
             n = 0
             for jugador, check in lista_jugadores.items():
-                pos = (POS_LISTA[0], POS_LISTA[1]+(n*GRID))
+                pos = (pos_lista_jugadores[0], pos_lista_jugadores[1]+(n*GRID))
                 w, _h = jugador.get_size()
                 x, y = pos[0] + w + 5, pos[1]
                 pantalla.blit(jugador, pos)
@@ -307,17 +390,24 @@ def juego():
                 listos = cliente.listos
             
 
-            pantalla.blit(info_render, (50, 375))
+            pantalla.blit(info_render, (45, 465))
+            dibujar_estadisticas_menu(
+                pantalla,
+                stats_titulo_font,
+                stats_texto_font,
+                user_tex if not cliente.registrado else cliente.nombre
+            )
 
             centrar(pantalla, parchis_render, (ANCHO // 2, 50))
             
-            pantalla.blit(nombre_render,POS_USERNAME)
+            pantalla.blit(nombre_render,pos_nombre_label)
 
-            pantalla.blit(color_render,POS_COLORES)
+            pantalla.blit(color_render,pos_color_label)
 
-            pantalla.blit(jugadores_render,(POS_LISTA[0], POS_LISTA[1]- GRID))
+            pantalla.blit(jugadores_render,pos_jugadores_titulo)
 
-            pantalla.blit(listos_render, POS_LISTOS)
+            pantalla.blit(listos_render, pos_listos)
+            dibujar_instrucciones_lobby(pantalla, ayuda_font)
 
             if cliente.info == '':
                 centrar(pantalla, intro_render, (ANCHO//2, 100))
@@ -332,8 +422,10 @@ def juego():
                         color.image.fill(color.color_pintar)
                 cliente.color_select = False
             
+            if user_tex == '' and not cliente.registrado:
+                pantalla.blit(placeholder_nombre_render, pos_nombre_input)
             text_surfae=base_font.render(user_tex,True, (0,0,0))
-            pantalla.blit(text_surfae,(200,200))
+            pantalla.blit(text_surfae,pos_nombre_input)
             pygame.display.flip()
         if ventana_cerrada:
             break
@@ -416,11 +508,17 @@ def juego():
 
             #Impresion de los dos dados
             pantalla.blit(Lista_dado[cliente.dados[0]], (570,250))
-            pantalla.blit(Lista_dado[cliente.dados[1]], (644,250))
-            Mensaje = 'Tecla L para lanzar'
+            if len(cliente.dados) > 1:
+                pantalla.blit(Lista_dado[cliente.dados[1]], (644,250))
             fuente = pygame.font.SysFont('arial', 20)
-            Mensaje = fuente.render(Mensaje, True, (0, 0, 0))
-            pantalla.blit(Mensaje, (570,320)) 
+            if cliente.primero:
+                Mensaje = fuente.render('Tecla L para lanzar', True, (0, 0, 0))
+                pantalla.blit(Mensaje, (570,320))
+            else:
+                Mensaje = fuente.render('Lanza dados para', True, (0, 0, 0))
+                Mensaje2 = fuente.render('decidir quien empieza', True, (0, 0, 0))
+                pantalla.blit(Mensaje, (570,320))
+                pantalla.blit(Mensaje2, (570,342))
 
 
             #Imprimir usuario

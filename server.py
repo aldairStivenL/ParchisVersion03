@@ -46,7 +46,7 @@ class Cliente(Thread):
     
     def definir_siguiente(self):
         siguiente = False
-        if self.dados[0] == self.dados[1]:
+        if len(self.dados) == 2 and self.dados[0] == self.dados[1]:
             if self.oportunides == 0:
                 self.combo += 1
             if self.combo == 3:
@@ -296,7 +296,7 @@ class Cliente(Thread):
                             
                             self.oportunides += 1
                             afuera = False
-                            if self.dados[0] == self.dados[1]:
+                            if len(self.dados) == 2 and self.dados[0] == self.dados[1]:
                                 
                                 casilla = casillas[salidas[jugador['color']]]
                                 jugadores[pos_turno]['fichas'] = [casilla for x in range(len(jugador['fichas']))]
@@ -322,13 +322,12 @@ class Cliente(Thread):
                                 siguiente = False
                                 self.oportunides = 0
                                 #-----------------------------------------#
-                                self.cantidad_movimientos = sum(self.dados) + 2
-                                movimientos = [self.dados[0]+1, self.dados[1]+1, sum(self.dados)+2]
-                                posibles_movimientos = calcular_posibles_movimientos(
+                                movimientos, posibles_movimientos = calcular_posibles_movimientos_turno(
                                     jugador['fichas'],
-                                    movimientos,
+                                    self.dados,
                                     jugador['color']
                                 )
+                                self.cantidad_movimientos = sum(movimientos) if len(movimientos) == 1 else sum(valores_dados(self.dados))
                                 sin_movimientos = False
                                 for moves in posibles_movimientos:
                                     for mov in moves:
@@ -437,7 +436,7 @@ class Cliente(Thread):
                         else:
                             if self.cantidad_movimientos == 0 and self.combo == 0 and not self.sacar_ficha:
                                 
-                                if self.dados[0] != self.dados[1]:
+                                if len(self.dados) != 2 or self.dados[0] != self.dados[1]:
                                     siguiente = self.definir_siguiente()
                                 else:
                                     siguiente = True
